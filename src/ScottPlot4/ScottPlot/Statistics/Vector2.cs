@@ -2,7 +2,7 @@
 
 namespace ScottPlot.Statistics
 {
-    // A simpler double-precision floating point alternative to the System.Numerics.Vectors package
+    // A simpler double-precision floating point alternative to the System.Numerics.WindInfos package
     // https://github.com/microsoft/referencesource/blob/master/System.Numerics/System/Numerics/Vector2.cs
 
     public struct Vector2

@@ -3,6 +3,7 @@ using ScottPlot.Renderable;
 using System;
 using System.Drawing;
 using ScottPlot.SnapLogic;
+using System.Diagnostics;
 
 namespace ScottPlot.Plottable
 {
@@ -170,7 +171,7 @@ namespace ScottPlot.Plottable
                 double xMax = Math.Min(Max, dims.XMax);
                 float pixelX1 = dims.GetPixelX(xMin);
                 float pixelX2 = dims.GetPixelX(xMax);
-
+               
                 gfx.DrawLine(pen, pixelX1, pixelY, pixelX2, pixelY);
             }
             else

@@ -1495,6 +1495,24 @@ namespace ScottPlot
             Add(vectorField);
             return vectorField;
         }
+        public WindBarb AddWindBarb(
+          WindInfo[,] windInfos,
+          double[] xs,
+          double[] ys,
+          string label = null,
+          Color? color = null,
+          Drawing.Colormap colormap = null,
+          double scaleFactor = 1
+          )
+        {
+            // TODO: refactor constructor to eliminate styling arguments
+            var windBarb = new WindBarb(windInfos, xs, ys,
+                colormap, scaleFactor, color ?? settings.GetNextColor())
+            { Label = label };
+            Add(windBarb);
+            //AxisScaleLock(true,EqualScaleMode.PreserveY);
+            return windBarb;
+        }
 
         /// <summary>
         /// Add a 2D vector field to the plot
