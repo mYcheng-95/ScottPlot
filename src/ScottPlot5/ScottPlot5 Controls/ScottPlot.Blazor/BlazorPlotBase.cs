@@ -10,6 +10,9 @@ public abstract class BlazorPlotBase : ComponentBase, IPlotControl
     [Parameter]
     public string Style { get; set; } = string.Empty;
 
+    [Parameter]
+    public bool EnableRenderLoop { get; set; } = false;
+
     public Plot Plot { get; } = new();
 
     public BlazorPlotBase()
@@ -25,8 +28,6 @@ public abstract class BlazorPlotBase : ComponentBase, IPlotControl
         DisplayScale = DetectDisplayScale();
         Interaction = new(this);
     }
-
-    public RenderQueue RenderQueue { get; } = new();
 
     public Interaction Interaction { get; private set; }
 

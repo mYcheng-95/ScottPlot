@@ -2,6 +2,7 @@
 
 public class DefaultGrid : IGrid
 {
+    public bool IsVisible { get; set; } = true;
     public LineStyle MajorLineStyle = new() { Width = 1, Color = Colors.Black.WithOpacity(.1) };
     public LineStyle MinorLineStyle = new() { Width = 0, Color = Colors.Black.WithOpacity(.05) };
 
@@ -30,6 +31,8 @@ public class DefaultGrid : IGrid
 
     public void Render(RenderPack rp)
     {
+        if (!IsVisible)
+            return;
 
         if (MinorLineStyle.Width > 0)
         {
@@ -60,6 +63,6 @@ public class DefaultGrid : IGrid
             ends[i] = edge.IsHorizontal() ? new Pixel(px, rp.DataRect.Top) : new Pixel(rp.DataRect.Right, px);
         }
 
-        Drawing.DrawLines(rp.Canvas, starts, ends, lineStyle.Color, lineStyle.Width);
+        Drawing.DrawLines(rp.Canvas, starts, ends, lineStyle.Color, lineStyle.Width, antiAlias: true, lineStyle.Pattern);
     }
 }

@@ -25,9 +25,6 @@ public class AvaPlot : Controls.Control, IPlotControl
 
     public float DisplayScale { get; set; }
 
-    public RenderQueue RenderQueue { get; } = new();
-
-
     private static readonly List<FilePickerFileType> filePickerFileTypes = new()
     {
         new("PNG Files") { Patterns = new List<string> { "*.png" } },
@@ -127,13 +124,14 @@ public class AvaPlot : Controls.Control, IPlotControl
 
     public override void Render(DrawingContext context)
     {
-        context.Custom(new CustomDrawOp(Bounds, Plot));
+        Rect controlBounds = new(Bounds.Size);
+        CustomDrawOp customDrawOp = new(controlBounds, Plot);
+        context.Custom(customDrawOp);
     }
 
     public void Refresh()
     {
         InvalidateVisual();
-        RenderQueue.RefreshAll();
     }
 
     public void ShowContextMenu(Pixel position)

@@ -85,6 +85,28 @@ public static class Generate
         return values;
     }
 
+    public static double[] Zeros(int count)
+    {
+        return Repeating(count, 0);
+    }
+
+    public static double[] Ones(int count)
+    {
+        return Repeating(count, 1);
+    }
+
+    public static double[] Repeating(int count, double value)
+    {
+        double[] values = new double[count];
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = value;
+        }
+
+        return values;
+    }
+
     #endregion
 
     #region numerical 2D
@@ -175,32 +197,27 @@ public static class Generate
     /// <summary>
     /// Return a series of values starting with <paramref name="offset"/> and
     /// each randomly deviating from the previous by at most <paramref name="mult"/>.
-    /// Random values are deterministic based on the value of <paramref name="seed"/>.
     /// </summary>
-    public static double[] RandomWalk(int count, double mult = 1, double offset = 0, int seed = 0)
+    public static double[] RandomWalk(int count, double mult = 1, double offset = 0)
     {
-        RandomDataGenerator gen = new(seed);
-        return gen.RandomWalk(count, mult, offset);
+        return RandomData.RandomWalk(count, mult, offset);
     }
 
     /// <summary>
     /// Return an array of <paramref name="count"/> random values 
     /// from <paramref name="min"/> to <paramref name="max"/>
-    /// according to the random seed defined by <paramref name="seed"/>
     /// </summary>
-    public static double[] Random(int count, double min = 0, double max = 1, int seed = 0)
+    public static double[] Random(int count, double min = 0, double max = 1)
     {
-        RandomDataGenerator gen = new(seed);
         return Enumerable.Range(0, count)
-            .Select(_ => gen.RandomNumber(min, max))
+            .Select(_ => RandomData.RandomNumber(min, max))
             .ToArray();
     }
 
-    public static double[] RandomNormal(int count, double mean = 0, double stdDev = 1, int seed = 0)
+    public static double[] RandomNormal(int count, double mean = 0, double stdDev = 1)
     {
-        RandomDataGenerator gen = new(seed);
         return Enumerable.Range(0, count)
-            .Select(_ => gen.RandomNormalNumber(mean, stdDev))
+            .Select(_ => RandomData.RandomNormalNumber(mean, stdDev))
             .ToArray();
     }
 

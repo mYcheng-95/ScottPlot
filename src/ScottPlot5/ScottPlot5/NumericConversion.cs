@@ -178,4 +178,23 @@ public static class NumericConversion
 
         return Expression.Lambda<Func<T, T, bool>>(body, paramA, paramB).Compile();
     }
+
+    public static T Clamp<T>(T input, T min, T max) where T : IComparable
+    {
+        if (input.CompareTo(min) < 0) return min;
+        if (input.CompareTo(max) > 0) return max;
+        return input;
+    }
+
+    public static bool IsReal(double x)
+    {
+        // implemented here because older versions of .NET do not support double.IsReal()
+        return !double.IsNaN(x) && !double.IsInfinity(x);
+    }
+
+    public static bool IsReal(float x)
+    {
+        // implemented here because older versions of .NET do not support double.IsReal()
+        return !float.IsNaN(x) && !float.IsInfinity(x);
+    }
 }

@@ -4,8 +4,11 @@ public class RenderPlottables : IRenderAction
 {
     public void Render(RenderPack rp)
     {
-        foreach (var plottable in rp.Plot.PlottableList.Where(x => x.IsVisible))
+        foreach (IPlottable plottable in rp.Plot.PlottableList)
         {
+            if (!plottable.IsVisible)
+                return;
+
             plottable.Axes.DataRect = rp.DataRect;
             rp.Canvas.Save();
 
@@ -15,11 +18,11 @@ public class RenderPlottables : IRenderAction
             }
             else
             {
-                rp.Canvas.ClipRect(rp.DataRect.ToSKRect());
+                rp.ClipToDataArea();
                 plottable.Render(rp);
             }
 
-            rp.Canvas.Restore();
+            rp.DisableClipping();
         }
     }
 }

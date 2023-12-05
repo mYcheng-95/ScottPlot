@@ -1,6 +1,10 @@
 ﻿using NUnit.Framework;
 using ScottPlotTests;
 using System;
+using System.Linq;
+using System.Drawing;
+using System.Runtime.Intrinsics.X86;
+using System.ComponentModel.DataAnnotations;
 
 namespace ScottPlot.Tests.PlotTypes;
 
@@ -74,5 +78,84 @@ internal class Population
         ScottPlot.Plot plt = new();
         plt.AddPopulations(poulations);
         Assert.DoesNotThrow(() => plt.Render());
+    }
+
+    [Test]
+    public void Test_Population_CustomOpacity()
+    {
+        // issue #2967 - custom alpha values for population plots
+        // https://github.com/ScottPlot/ScottPlot/issues/2967
+
+        // Redscale: the argbs contain different alpha values.
+        var seriesColors = new Color[] {
+        Color.FromArgb(225, 255, 0, 0),
+        Color.FromArgb(175, 255, 0, 0),
+        Color.FromArgb(125, 255, 0, 0),
+        Color.FromArgb(75, 255, 0, 0),
+        Color.FromArgb(25, 255, 0, 0)};
+
+        // 3 groups
+        var groupNames = new[] { "Group A", "Group B", "Group C" };
+
+        // Get some data
+        var seriesData = GetSeriesData(
+            seriesCount: seriesColors.Length,
+            groupCount: groupNames.Length);
+
+        Plot plt = new(600, 400);
+
+        plt.XTicks(groupNames);
+        plt.Legend();
+
+        var populations = seriesData.Select(series => series.Select(seriesData => new Statistics.Population(seriesData)).ToArray()).ToArray();
+        var populationSeries = populations.Select((p, i) => new Statistics.PopulationSeries(p, seriesLabel: $"Series {i + 1}")).ToArray();
+        var populationMultiSeries = new Statistics.PopulationMultiSeries(populationSeries.ToArray());
+        var populationPlot = plt.AddPopulations(populationMultiSeries);
+
+        // Set the colours
+        for (var i = 0; i < populationPlot.MultiSeries.seriesCount; i++)
+        {
+            populationPlot.MultiSeries.multiSeries[i].color = seriesColors[i];
+        }
+
+        var bmp1 = TestTools.GetLowQualityBitmap(plt);
+        // Turn off automatic opacity - colors should now match seriesColors alpha values
+        populationPlot.AutomaticOpacity = false;
+        var bmp2 = TestTools.GetLowQualityBitmap(plt);
+
+        var before = new MeanPixel(bmp1);
+        var after = new MeanPixel(bmp2);
+        // more transparent red -> lighter image
+        Assert.That(before.IsDarkerThan(after));
+
+        // Use fraction to make markers half the opacity of the boxes
+        populationPlot.MarkerOpacityRatio = 0.5;
+        var bmp3 = TestTools.GetLowQualityBitmap(plt);
+
+        before = new MeanPixel(bmp2);
+        after = new MeanPixel(bmp3);
+        // more transparent red -> lighter image
+        Assert.That(before.IsDarkerThan(after));
+
+        // Turn Automatic Opacity back on - MarkerOpacityRatio should no longer have an effect
+        populationPlot.AutomaticOpacity = true;
+        var bmp4 = TestTools.GetLowQualityBitmap(plt);
+
+        before = new MeanPixel(bmp1);
+        after = new MeanPixel(bmp4);
+        // Should be back to default values
+        Assert.That(before.IsEqualTo(after));
+
+        // TestTools.SaveFig(bmp1, "1");
+        // TestTools.SaveFig(bmp2, "2");
+        // TestTools.SaveFig(bmp3, "3");
+        // TestTools.SaveFig(bmp4, "4");
+
+        double[][][] GetSeriesData(int seriesCount, int groupCount)
+        {
+            return Enumerable.Range(1, seriesCount)
+                .Select(si => Enumerable.Range(1, groupCount)
+                    .Select(gi => Enumerable.Range(gi + si, 3).Select(x => Convert.ToDouble(x)).ToArray()).ToArray()).ToArray();
+        }
     }
 }

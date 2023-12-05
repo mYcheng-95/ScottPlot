@@ -4,12 +4,48 @@
 * https://scottplot.net/changelog/ is a formatted version of this document
 * https://scottplot.net/contributors/ shows all of ScottPlot's contributors
 
-## ScottPlot 5.0.9-beta (in development)
+## ScottPlot 5.0.11-beta (in development)
+
+## ScottPlot 4.1.70 (in development)
+
+## ScottPlot 5.0.10-beta
+_Published on [NuGet](https://www.nuget.org/profiles/ScottPlot) on 2023-12-03_
 * Signal: Improved support for datasets with repeating values (#2933, #2935) _Thanks @StendProg_
 * Blazor: Added a Blazor control (#2959) _Thanks @sulivanganter_
+* Layout: Expose `Matched` layout engine (#2881) _Thanks @proplunger_
+* Plot: Added `DisableGrid()` and `EnableGrid()` helper methods (#2947)
+* Render: Created `IRenderLast` plottables can implement to draw above axes (#2998, #2993)
+* Controls: Added `Interaction.Disable()` and `Interaction.Enable()` methods for easy control of mouse interactivity
+* Render: Improve axis frame and tick mark rendering for SVG export (#2944) _Thanks @Crown0815_
+* Controls: Created OpenGL controls `FormsPlotGL` and `WpfPlotGL` distinct from `FormsPlot` and `WpfPlot` (#3008, #3007, #2950, #2395, #2565)
+* Markers: Added numerous additional marker types (#2999, #3019) _Thanks @Gray-lab_
+* Plot: Improved support for multiple axes and automatic scaling (#3027)
+* RandomDataGenerator: Use a global Random number generator for improved randomness and thread safety (#2893, #3022) _Thanks @KroMignon_
+* Scatter: Added `Data.GetNearest()` to simplify locating the point nearest the cursor (#3026, #3048) _Thanks @JurasskPark and @CBrauer_
+* Plottable: Added a new `Text` plot type for displaying a label at a location in coordinate space (#2939)
+* Plot: Benchmark is now a user-customizable plottable and `Plot.ShowBenchmark` is now `Plot.Benchmark.IsVisible` (#2961)
+* Grid: Improve support for custom line styles (#2904) _Thanks @minjjKang_
+* Pie: Improve appearance of slice labels in the legend (#2894, #2852) _Thanks @zy1075984_
+* Legend: Replaced `List<ILegend>` with a simple `Legend` object with an `IsVisible` property (#2792)
+* Avalonia: Improved sizing of plot controls inside containers (#2923) _Thanks @JohnSmith20211124 and @Developer-Alexander_
 
-## ScottPlot 4.1.68 (in development)
+## ScottPlot 4.1.69
+_Published on [NuGet](https://www.nuget.org/profiles/ScottPlot) on 2023-12-03_
 * Axis: Added `IsReverse` property to let users invert the orientation of an axis (#2958) _Thanks @HandsomeGoldenKnight_
+* Text: Exposed `LastRenderRectangleCoordinates` to improve mouse interactivity (#2994) _Thanks @DaveMartel_
+* Arrow: Fixed bug in constructor overload (#2976, #3001) _Thanks @Gray-lab_
+* Controls: Resizing will now invoke `OnAxesChanged` event (#3000, #3002) _Thanks @dhgigisoave_
+* Plot: Added `LastRenderDimensions` for easy access to the latest figure dimensions (#3000, #3002) _Thanks @dhgigisoave_
+* DataLogger and DataStreamer: Added support for custom line styles (#2972, #2972) _Thanks @Gray-lab_
+* Population: Defining `BoxAlphaOverride` and `MarkerAlpha` allows for exact color representation (#2967, #3013) _Thanks @Gray-lab and @Em3a-c_
+* RandomDataGenerator: Use a global Random number generator for improved randomness and thread safety (#2893, #3022) _Thanks @KroMignon_
+* Controls: Improve `Bitmap` disposal as controls are unloaded (#3023, #2902) _Thanks @KroMignon and @mocakturk_
+* ScatterPlotDraggable: Fixed bug affecting `IsUnderMouse()` after `Update()` is called (#2870, #2969, #3025) _Thanks @KroMignon, @SasKayDE, and @onur-akaydin_
+* Bar: New `AddBar()` overload for creating a single highly customized bar graph bar (#3024, #3033) _Thanks @melhashash_
+* FormsPlot: Fix bug affecting mouse interaction on plots with all items hidden (#2895) _Thanks @LapinFou_
+* RadarPlot: Added customization options for axis label string formatting, manual tick positions, and transparency (#3041) _Thanks @JbmOnGitHub_
+* Axis: Added `Axis.SetTicks()` to allow full customization of major and minor ticks (#2957) _Thanks @FannyAtGitHub_
+* Plot: `GetImageHTML()` has been renamed to `GetImageHtml()` (#2974) _Thanks @b4shful_
 
 ## ScottPlot 5.0.9-beta
 _Published on [NuGet](https://www.nuget.org/profiles/ScottPlot) on 2023-10-03_

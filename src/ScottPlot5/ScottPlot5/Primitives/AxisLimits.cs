@@ -11,8 +11,8 @@ public readonly struct AxisLimits : IEquatable<AxisLimits>
     public double Bottom { get; }
     public double Top { get; }
 
-    public double Width => Right - Left;
-    public double Height => Top - Bottom;
+    public double HorizontalSpan => Right - Left;
+    public double VerticalSpan => Top - Bottom;
 
     public CoordinateRange XRange => new(Left, Right);
     public CoordinateRange YRange => new(Bottom, Top);
@@ -21,6 +21,14 @@ public readonly struct AxisLimits : IEquatable<AxisLimits>
     public CoordinateRect Rect => new(Left, Right, Bottom, Top);
 
     public static CoordinateRect Default { get; } = new(-10, 10, -10, 10);
+
+    public AxisLimits(Coordinates coordinates)
+    {
+        Left = coordinates.X;
+        Right = coordinates.X;
+        Bottom = coordinates.Y;
+        Top = coordinates.Y;
+    }
 
     public AxisLimits(CoordinateRect rect)
     {
@@ -53,6 +61,12 @@ public readonly struct AxisLimits : IEquatable<AxisLimits>
 
     public static AxisLimits NoLimits => new(double.NaN, double.NaN, double.NaN, double.NaN);
 
+    public static AxisLimits VerticalOnly(double yMin, double yMax) => new(double.NaN, double.NaN, yMin, yMax);
+
+    public static AxisLimits HorizontalOnly(double xMin, double xMax) => new(xMin, xMax, double.NaN, double.NaN);
+
+    // TODO: obsolete all Expanded() methods and replace functionality with ExpandingAxisLimits
+
     /// <summary>
     /// Return a new <see cref="AxisLimits"/> expanded to include the given <paramref name="x"/> and <paramref name="y"/>.
     /// </summary>
@@ -81,18 +95,30 @@ public readonly struct AxisLimits : IEquatable<AxisLimits>
         return Expanded(rect.TopLeft).Expanded(rect.BottomRight);
     }
 
-    public CoordinateRect WithPan(double deltaX, double deltaY)
+    /// <summary>
+    /// Return a new <see cref="AxisLimits"/> expanded to include the area defined by <paramref name="limits"/>.
+    /// </summary>
+    public AxisLimits Expanded(AxisLimits limits)
     {
-        return new CoordinateRect(Rect.Left + deltaX, Rect.Right + deltaX, Rect.Bottom + deltaY, Rect.Top + deltaY);
+        limits = limits.Expanded(Left, Bottom);
+        limits = limits.Expanded(Right, Top);
+        return limits;
     }
 
-    public CoordinateRect WithZoom(double fracX, double fracY)
+    public AxisLimits WithPan(double deltaX, double deltaY)
+    {
+        return new(Left + deltaX, Right + deltaX, Bottom + deltaY, Top + deltaY);
+    }
+
+    public AxisLimits WithZoom(double fracX, double fracY)
     {
         return WithZoom(fracX, fracY, Rect.HorizontalCenter, Rect.VerticalCenter);
     }
 
-    public CoordinateRect WithZoom(double fracX, double fracY, double zoomToX, double zoomToY)
+    public AxisLimits WithZoom(double fracX, double fracY, double zoomToX, double zoomToY)
     {
+        // TODO: do this without heap allocations
+
         CoordinateRange xRange = new(Rect.Left, Rect.Right);
         xRange.ZoomFrac(fracX, zoomToX);
 

@@ -1,14 +1,14 @@
-﻿using ScottPlot.Legends;
-using ScottPlot.Control;
-using ScottPlot.Stylers;
+﻿using ScottPlot.Control;
+using ScottPlot.Legends;
 using ScottPlot.Rendering;
+using ScottPlot.Stylers;
 
 namespace ScottPlot;
 
 public class Plot : IDisposable
 {
-    public List<IXAxis> XAxes { get; } = new();
-    public List<IYAxis> YAxes { get; } = new();
+    public List<IXAxis> XAxes { get; } = new(); // TODO: axes should be inside the Panels list
+    public List<IYAxis> YAxes { get; } = new(); // TODO: axes should be inside the Panels list
     public List<IAxis> Axes => Enumerable.Concat<IAxis>(XAxes, YAxes).ToList();
 
     public IXAxis TopAxis => XAxes.First(x => x.Edge == Edge.Top);
@@ -28,13 +28,14 @@ public class Plot : IDisposable
     public Panels.TitlePanel TitlePanel { get; } = new();
 
     public List<IGrid> Grids { get; } = new();
-    public List<ILegend> Legends { get; } = new();
+    public Legend Legend { get; } = new();
     public List<IPlottable> PlottableList { get; } = new();
     public PlottableAdder Add { get; }
     public IPalette Palette { get => Add.Palette; set => Add.Palette = value; }
     public RenderManager RenderManager { get; }
+    public RenderDetails LastRender => RenderManager.LastRender;
     public ILayoutEngine LayoutEngine { get; set; } = new LayoutEngines.Automatic();
-    public AutoScaleMargins AutoScaleMargins { get; private set; } = new(.1, .15);
+    public IAutoScaler AutoScaler { get; set; } = new AutoScalers.FractionalAutoScaler(.1, .15);
     public Color FigureBackground { get; set; } = Colors.White;
     public Color DataBackground { get; set; } = Colors.White;
     public IZoomRectangle ZoomRectangle { get; set; }
@@ -43,7 +44,8 @@ public class Plot : IDisposable
     public AxisStyler AxisStyler { get; }
 
     public PlotStyler Style { get; }
-    public bool ShowBenchmark { get; set; } = false;
+
+    public IPlottable Benchmark { get; set; } = new Plottables.Benchmark();
 
     /// <summary>
     /// This property provides access to the primary horizontal axis below the plot.
@@ -101,10 +103,6 @@ public class Plot : IDisposable
         IGrid grid = new Grids.DefaultGrid(xAxisPrimary, yAxisPrimary);
         Grids.Add(grid);
 
-        // add a standard legend
-        ILegend legend = new StandardLegend();
-        Legends.Add(legend);
-
         // setup classes which must be aware of the plot
         Add = new(this);
         AxisStyler = new(this);
@@ -143,20 +141,44 @@ public class Plot : IDisposable
         .Concat(new[] { TitlePanel })
         .ToArray();
 
+    public void SetAxisLimitsX(double left, double right, IXAxis xAxis)
+    {
+        xAxis.Min = left;
+        xAxis.Max = right;
+    }
+
+    public void SetAxisLimitsY(double bottom, double top, IYAxis yAxis)
+    {
+        yAxis.Min = bottom;
+        yAxis.Max = top;
+    }
+
+    public void SetAxisLimitsX(double left, double right)
+    {
+        SetAxisLimitsX(left, right, BottomAxis);
+    }
+
+    public void SetAxisLimitsY(double bottom, double top)
+    {
+        SetAxisLimitsY(bottom, top, LeftAxis);
+    }
+
     public void SetAxisLimits(double left, double right, double bottom, double top)
     {
-        XAxis.Min = left;
-        XAxis.Max = right;
-        YAxis.Min = bottom;
-        YAxis.Max = top;
+        SetAxisLimitsX(left, right, BottomAxis);
+        SetAxisLimitsY(bottom, top, LeftAxis);
+    }
+
+    public void SetAxisLimits(double left, double right, double bottom, double top, IXAxis xAxis, IYAxis yAxis)
+    {
+        SetAxisLimitsX(left, right, xAxis);
+        SetAxisLimitsY(bottom, top, yAxis);
     }
 
     public void SetAxisLimits(double? left = null, double? right = null, double? bottom = null, double? top = null)
     {
-        XAxis.Min = left ?? XAxis.Min;
-        XAxis.Max = right ?? XAxis.Max;
-        YAxis.Min = bottom ?? YAxis.Min;
-        YAxis.Max = top ?? YAxis.Max;
+        SetAxisLimitsX(left ?? XAxis.Min, right ?? XAxis.Max);
+        SetAxisLimitsY(bottom ?? YAxis.Min, top ?? YAxis.Max);
     }
 
     public void SetAxisLimits(CoordinateRect rect)
@@ -164,9 +186,35 @@ public class Plot : IDisposable
         SetAxisLimits(rect.Left, rect.Right, rect.Bottom, rect.Top);
     }
 
-    public void SetAxisLimits(AxisLimits rect)
+    public void SetAxisLimitsX(AxisLimits limits)
     {
-        SetAxisLimits(rect.Rect);
+        SetAxisLimitsX(limits.Left, limits.Right);
+    }
+
+    public void SetAxisLimitsX(AxisLimits limits, IXAxis xAxis)
+    {
+        SetAxisLimitsX(limits.Left, limits.Right, xAxis);
+    }
+
+    public void SetAxisLimitsY(AxisLimits limits)
+    {
+        SetAxisLimitsY(limits.Bottom, limits.Top);
+    }
+
+    public void SetAxisLimitsY(AxisLimits limits, IYAxis yAxis)
+    {
+        SetAxisLimitsY(limits.Bottom, limits.Top, yAxis);
+    }
+
+    public void SetAxisLimits(AxisLimits limits)
+    {
+        SetAxisLimits(limits, XAxis, YAxis);
+    }
+
+    public void SetAxisLimits(AxisLimits limits, IXAxis xAxis, IYAxis yAxis)
+    {
+        SetAxisLimitsX(limits.Left, limits.Right, xAxis);
+        SetAxisLimitsY(limits.Bottom, limits.Top, yAxis);
     }
 
     public void SetAxisLimits(CoordinateRange xRange, CoordinateRange yRange)
@@ -192,36 +240,32 @@ public class Plot : IDisposable
     }
 
     /// <summary>
-    /// Automatically scale the axis limits to fit the data.
-    /// Note: This used to be AxisAuto().
-    /// Note: Margin size can be customized by editing properties of <see cref="AutoScaleMargins"/>
+    /// Reset plot data margins to their default value.
     /// </summary>
-    public void AutoScale()
+    public void Margins()
     {
-        // reset limits for all axes
-        XAxes.ForEach(xAxis => xAxis.Range.Reset());
-        YAxes.ForEach(yAxis => yAxis.Range.Reset());
-
-        // assign default axes to plottables without axes
-        ReplaceNullAxesWithDefaults();
-
-        // expand all axes by the limits of each plot
-        foreach (IPlottable plottable in PlottableList)
-        {
-            AutoScale(plottable.Axes.XAxis, plottable.Axes.YAxis);
-        }
+        AutoScaler = new AutoScalers.FractionalAutoScaler();
+        AutoScale();
     }
 
     /// <summary>
-    /// Define the amount of whitespace to include around the data when calling <see cref="AutoScale()"/>.
+    /// Define the amount of whitespace to place around the data area when calling <see cref="AutoScale()"/>.
     /// Values are a fraction from 0 (tightly fit the data) to 1 (lots of whitespace).
     /// </summary>
-    public void Margins(double horizontal = 0.1, double vertical = .15, bool apply = true)
+    public void Margins(double horizontal = 0.1, double vertical = .15)
     {
-        AutoScaleMargins = new(horizontal, vertical);
+        AutoScaler = new AutoScalers.FractionalAutoScaler(horizontal, vertical);
+        AutoScale();
+    }
 
-        if (apply)
-            AutoScale();
+    /// <summary>
+    /// Define the amount of whitespace to place around the data area when calling <see cref="AutoScale()"/>.
+    /// Values are a fraction from 0 (tightly fit the data) to 1 (lots of whitespace).
+    /// </summary>
+    public void Margins(double left, double right, double bottom, double top)
+    {
+        AutoScaler = new AutoScalers.FractionalAutoScaler(left, right, bottom, top);
+        AutoScale();
     }
 
     /// <summary>
@@ -240,28 +284,23 @@ public class Plot : IDisposable
     }
 
     /// <summary>
-    /// Automatically scale the given axes to fit the data in plottables which use them
+    /// Automatically scale all axes to fit the data in all plottables
+    /// </summary>
+    public void AutoScale()
+    {
+        ReplaceNullAxesWithDefaults();
+        AutoScaler.AutoScaleAll(PlottableList);
+    }
+
+    /// <summary>
+    /// Autoscale the given axes to accommodate the data from all plottables that use them
     /// </summary>
     public void AutoScale(IXAxis xAxis, IYAxis yAxis)
     {
-        // reset limits only for these axes
-        xAxis.Range.Reset();
-        yAxis.Range.Reset();
-
-        // assign default axes to plottables without axes
+        // TODO: is there a better way to do this???
         ReplaceNullAxesWithDefaults();
-
-        // expand all axes by the limits of each plot
-        foreach (IPlottable plottable in PlottableList)
-        {
-            AxisLimits limits = plottable.GetAxisLimits();
-            plottable.Axes.YAxis.Range.Expand(limits.Rect.YRange);
-            plottable.Axes.XAxis.Range.Expand(limits.Rect.XRange);
-        }
-
-        // apply margins
-        XAxes.ForEach(xAxis => xAxis.Range.ZoomFrac(1 - AutoScaleMargins.Horizontal));
-        YAxes.ForEach(yAxis => yAxis.Range.ZoomFrac(1 - AutoScaleMargins.Vertical));
+        AxisLimits limits = AutoScaler.GetAxisLimits(this, xAxis, yAxis);
+        SetAxisLimits(limits, xAxis, yAxis);
     }
 
     /// <summary>
@@ -278,7 +317,7 @@ public class Plot : IDisposable
     /// </summary>
     public void Pan(PixelSize distance)
     {
-        if (RenderManager.RenderCount == 0)
+        if (RenderManager.LastRender.Count == 0)
             throw new InvalidOperationException("at least one render is required before pixel panning is possible");
 
         XAxes.ForEach(ax => ax.Range.Pan(ax.GetCoordinateDistance(distance.Width, RenderManager.LastRender.DataRect)));
@@ -400,6 +439,38 @@ public class Plot : IDisposable
     {
         Pixel px = new(x, y);
         return GetCoordinates(px, xAxis, yAxis);
+    }
+
+    /// <summary>
+    /// Return a coordinate rectangle centered at a pixel
+    /// </summary>
+    public CoordinateRect GetCoordinateRect(float x, float y, float radius = 10)
+    {
+        PixelRect dataRect = RenderManager.LastRender.DataRect;
+        double left = XAxis.GetCoordinate(x - radius, dataRect);
+        double right = XAxis.GetCoordinate(x + radius, dataRect);
+        double top = YAxis.GetCoordinate(y - radius, dataRect);
+        double bottom = YAxis.GetCoordinate(y + radius, dataRect);
+        return new CoordinateRect(left, right, bottom, top);
+    }
+
+    /// <summary>
+    /// Return a coordinate rectangle centered at a pixel
+    /// </summary>
+    public CoordinateRect GetCoordinateRect(Pixel pixel, float radius = 10)
+    {
+        return GetCoordinateRect(pixel.X, pixel.Y, radius);
+    }
+
+    /// <summary>
+    /// Return a coordinate rectangle centered at a pixel
+    /// </summary>
+    public CoordinateRect GetCoordinateRect(Coordinates coordinates, float radius = 10)
+    {
+        PixelRect dataRect = RenderManager.LastRender.DataRect;
+        double radiusX = XAxis.GetCoordinateDistance(radius, dataRect);
+        double radiusY = YAxis.GetCoordinateDistance(radius, dataRect);
+        return coordinates.ToRect(radiusX, radiusY);
     }
 
     #endregion
@@ -526,6 +597,25 @@ public class Plot : IDisposable
     #region Helper Methods
 
     /// <summary>
+    /// Remove a specific object from the plot.
+    /// This removes the given object from <see cref="PlottableList"/>.
+    /// </summary>
+    public void Remove(IPlottable plottable)
+    {
+        PlottableList.Remove(plottable);
+    }
+
+    public void DisableGrid()
+    {
+        Grids.ForEach(x => x.IsVisible = false);
+    }
+
+    public void EnableGrid()
+    {
+        Grids.ForEach(x => x.IsVisible = true);
+    }
+
+    /// <summary>
     /// Clears the <see cref="PlottableList"/> list
     /// </summary>
     public void Clear() => PlottableList.Clear();
@@ -575,27 +665,6 @@ public class Plot : IDisposable
             return defaultGrids.First();
         else
             throw new InvalidOperationException("The plot has no default grids");
-    }
-
-    /// <summary>
-    /// Return the first default legend in use.
-    /// Throws an exception if no default legends exist.
-    /// </summary>
-    public Legends.StandardLegend GetLegend()
-    {
-        IEnumerable<Legends.StandardLegend> standardLegends = Legends.OfType<Legends.StandardLegend>();
-        if (standardLegends.Any())
-            return standardLegends.First();
-        else
-            throw new InvalidOperationException("The plot has no standard legends");
-    }
-
-    /// <summary>
-    /// Set visibility of all legends.
-    /// </summary>
-    public void Legend(bool enable = true)
-    {
-        Legends.ForEach(x => x.IsVisible = enable);
     }
 
     /// <summary>

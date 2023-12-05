@@ -40,7 +40,7 @@ public static class Drawing
         return new PixelSize(maxWidth, maxHeight);
     }
 
-    public static void DrawLines(SKCanvas canvas, Pixel[] starts, Pixel[] ends, Color color, float width = 1, bool antiAlias = true)
+    public static void DrawLines(SKCanvas canvas, Pixel[] starts, Pixel[] ends, Color color, float width = 1, bool antiAlias = true, LinePattern pattern = LinePattern.Solid)
     {
         if (starts.Length != ends.Length)
             throw new ArgumentException($"{nameof(starts)} and {nameof(ends)} must have same length");
@@ -51,6 +51,7 @@ public static class Drawing
             IsStroke = true,
             IsAntialias = antiAlias,
             StrokeWidth = width,
+            PathEffect = pattern.GetPathEffect(),
         };
 
         using SKPath path = new();
@@ -163,5 +164,23 @@ public static class Drawing
 
         var filter = SKColorFilter.CreateColorMatrix(mat);
         return filter;
+    }
+
+    public static SKSurface CreateSurface(int width, int height)
+    {
+        SKImageInfo imageInfo = new(
+            width: width,
+            height: height,
+            colorType: SKColorType.Rgba8888,
+            alphaType: SKAlphaType.Premul);
+
+        return SKSurface.Create(imageInfo);
+    }
+
+    public static void SavePng(SKSurface surface, string filename)
+    {
+        using SKImage skimg = surface.Snapshot();
+        Image img = new(skimg);
+        img.SavePng(filename);
     }
 }

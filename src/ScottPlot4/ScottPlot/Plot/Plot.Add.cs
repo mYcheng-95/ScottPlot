@@ -196,6 +196,25 @@ namespace ScottPlot
         }
 
         /// <summary>
+        /// Add a single bar to the plot.
+        /// </summary>
+        public BarPlot AddBar(double x, double y, double yError = 0, Color? color = null, double width = 0.8)
+        {
+            double[] xs = { x };
+            double[] ys = { y };
+            double[] yErrs = { yError };
+
+            BarPlot bar = new(xs, ys, yErrs, null)
+            {
+                FillColor = color ?? GetNextColor(),
+                BarWidth = width,
+            };
+
+            Add(bar);
+            return bar;
+        }
+
+        /// <summary>
         /// Add a bar plot for the given values. Bars will be placed at X positions 0, 1, 2, etc.
         /// </summary>
         public BarPlot AddBar(double[] values, Color? color = null)
@@ -1069,15 +1088,16 @@ namespace ScottPlot
         /// <param name="independentAxes">if true, axis (category) values are scaled independently</param>
         /// <param name="maxValues">if provided, each category (column) is normalized to these values</param>
         /// <param name="disableFrameAndGrid">also make the plot frameless and disable its grid</param>
+        /// <param name="alphafill">if provided, this value overrides the intermediate transparency (alpha) applied by default to the area fill color</param>
         /// <returns>the radar plot that was just created and added to the plot</returns>
-        public RadarPlot AddRadar(double[,] values, bool independentAxes = false, double[] maxValues = null, bool disableFrameAndGrid = true)
+        public RadarPlot AddRadar(double[,] values, bool independentAxes = false, double[] maxValues = null, bool disableFrameAndGrid = true, int alphafill = 50)
         {
 
             Color[] colors = Enumerable.Range(0, values.Length)
                                        .Select(i => settings.PlottablePalette.GetColor(i))
                                        .ToArray();
 
-            Color[] fills = colors.Select(x => Color.FromArgb(50, x)).ToArray();
+            Color[] fills = colors.Select(x => Color.FromArgb(alphafill, x)).ToArray();
 
             RadarPlot plottable = new(values, colors, fills, independentAxes, maxValues);
             Add(plottable);
